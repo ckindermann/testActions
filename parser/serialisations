@@ -1,0 +1,53 @@
+                                    1. edgeCreation: create edge {edge} 
+                                    2. deleting edge {edge}
+3. obsoleting edge {edge}  [NO CONSENSUS on how to do this in RDF]
+                                    4. node move : move {about} from {old value} to {new value} 
+
+                                    5. node deepeing: deepened {about} from {old value} to {new value}
+                                    6. node shallowing: shallow {about} from {old value} to {new value}
+
+        7. predicate change?: changing relationship between {about.subject} and {about.object} from {old value} to {new value} [TODO the class EdgeChange only provides a field for subject] 
+
+                                    8. rename {about} from {old_value} to {new valu}
+9. synonym {synonym} becomes new name of {about} and name {name} becomes a synoym
+
+[swap label 'label' for <about> with 'synonym'] <- is this correct?
+
+        [TODO: not quite sure how synonyms are treated: oboInOWL:hasRelatedSynonym, hasNarrowSynonym, hasBroadSynonym, hasExactSynonym - query for all four?] obo:IAO_0000118 ?
+
+10. remove node from subset: remove {about} from {subset}  [there is no field for {about}]
+ 
+
+ NEXT: SUBSETS
+
+oboInOwl:Subset is used to declare a subset in OWL
+oboInOWL:inSubset annotation is used to declare a term as part of a subset
+
+                                    11. obsoleting {about}
+                                    12. unobsoleting {about}
+                                    13. creating node {id} {label} with {annotation set} :TODO figure out how to deal with annotation set?
+                                    14. creating {about}
+                                    15. deleting {about}
+
+16. obsolete {about} and merge into {has direct replacement}
+    [TODO: where is an example of the 'replacenement annotatin?'
+                                    17 .obsolete {about} and replace with {has direct replacement}
+
+18. obsolete {about} considering {has nodirect replacement}
+(oboInOWL:consider)
+
+
+
+MONDO templates:
+
+add-gene-related-syndrom
+add-synonym
+add-term (add node/class)
+mergeTerm
+obsoleteTerm (done)
+relabaleTerm (rename)
+reviseLogicalDefinition (give me the logical axiom as RDF and all is good? otherwise, we would need to translate between formats)
+revise subclass relationship (node move)
+reviseTextualDefinition
+split term
+

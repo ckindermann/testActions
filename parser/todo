@@ -1,0 +1,5 @@
+create examples and put them on the demo server
+use formatted strings for SPARQL queries
+
+finish obsoletion with replacement (currently we can only parse it, next: app.py and then sparqql)
+

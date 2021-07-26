@@ -1,0 +1,123 @@
+BASE <http://w3id.org/kgcl/om/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX linkml: <https://w3id.org/linkml/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+
+linkml:String xsd:string
+
+linkml:Integer xsd:integer
+
+linkml:Boolean xsd:boolean
+
+linkml:Float xsd:float
+
+linkml:Double xsd:double
+
+linkml:Decimal xsd:decimal
+
+linkml:Time xsd:dateTime
+
+linkml:Date xsd:date
+
+linkml:Datetime xsd:dateTime
+
+linkml:Uriorcurie IRI
+
+linkml:Uri IRI
+
+linkml:Ncname xsd:string
+
+linkml:Objectidentifier IRI
+
+linkml:Nodeidentifier NONLITERAL
+
+<Annotation> CLOSED {
+    (  $<Annotation_tes> (  &<PropertyValue_tes> ;
+          rdf:type [ <PropertyValue> ] ? ;
+          <annotation_set> @<Annotation> ?
+       ) ;
+       rdf:type [ <Annotation> ] ?
+    )
+}
+
+<ClassNode> CLOSED {
+    (  $<ClassNode_tes> (  &<Node_tes> ;
+          rdf:type [ <Node> ] ?
+       ) ;
+       rdf:type [ owl:Class ]
+    )
+}
+
+<Edge> CLOSED {
+    (  $<Edge_tes> (  &<OntologyElement_tes> ;
+          rdf:type [ <OntologyElement> ] ? ;
+          <subject> @<Node> ? ;
+          <predicate> @<Node> ? ;
+          <object> @<Node> ? ;
+          <annotation_set> @<Annotation> ?
+       ) ;
+       rdf:type [ <Edge> ] ?
+    )
+}
+
+<InstanceNode> CLOSED {
+    (  $<InstanceNode_tes> (  &<Node_tes> ;
+          rdf:type [ <Node> ] ?
+       ) ;
+       rdf:type [ owl:NamedIndividual ]
+    )
+}
+
+<LogicalDefinition> CLOSED {
+    (  $<LogicalDefinition_tes> (  &<OntologyElement_tes> ;
+          rdf:type [ <OntologyElement> ] ?
+       ) ;
+       rdf:type [ <LogicalDefinition> ] ?
+    )
+}
+
+<Node>  (
+    CLOSED {
+       (  $<Node_tes> (  &<OntologyElement_tes> ;
+             rdf:type [ <OntologyElement> ] ? ;
+             <name> @linkml:String ? ;
+             <annotation_set> @<Annotation> ? ;
+             <owl_type> @<OwlTypeEnum> ?
+          ) ;
+          rdf:type [ <Node> ]
+       )
+    } OR @<ClassNode> OR @<InstanceNode>
+)
+
+<OntologyElement>  (
+    CLOSED {
+       (  $<OntologyElement_tes> rdf:type . * ;
+          rdf:type [ <OntologyElement> ] ?
+       )
+    } OR @<Edge> OR @<LogicalDefinition> OR @<Node> OR @<OntologySubset> OR @<PropertyValue>
+)
+
+<OntologySubset> CLOSED {
+    (  $<OntologySubset_tes> (  &<OntologyElement_tes> ;
+          rdf:type [ <OntologyElement> ] ?
+       ) ;
+       rdf:type [ <OntologySubset> ] ?
+    )
+}
+
+<PropertyValue>  (
+    CLOSED {
+       (  $<PropertyValue_tes> (  &<OntologyElement_tes> ;
+             rdf:type [ <OntologyElement> ] ? ;
+             <property> @<Node> ? ;
+             <filler> @linkml:String ?
+          ) ;
+          rdf:type [ <PropertyValue> ] ?
+       )
+    } OR @<Annotation>
+)
+
+
+
