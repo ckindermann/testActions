@@ -5,6 +5,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
   repository_dispatch:
     types: trigger-check-pull-request
 
@@ -29,7 +32,4 @@ jobs:
         pip install linkml
         pip install Flask
         pip install lark
-        pip install click  #use for CLI later on
-
-
-        
+        pip install click  #use for CLI later on 
