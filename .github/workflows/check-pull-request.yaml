@@ -33,3 +33,10 @@ jobs:
         pip install Flask
         pip install lark
         pip install click  #use for CLI later on 
+        pip install pytest
+
+    - name: Test with pytest
+      run: |
+          python -m pytest
+
+
