@@ -4,10 +4,10 @@ import python.kgcl
 import re
 
 def is_label(input):
-    return re.match('\'[^ \s\'].*\'', input)
+    return re.match(r'\'[^ \s\'].*\'', input)
 
 def is_id(input):
-    return re.match('<\S+>', input)
+    return re.match(r'<\S+>', input)
 
 def convert(kgclInstance):
 
@@ -223,6 +223,7 @@ def node_shallowing(kgclInstance):
 
     return updateQuery 
 
+#TODO: handling of language tags
 #look things up at https://www.ebi.ac.uk/ols/ontologies/iao
 def unobsolete(kgclInstance):
     about =  kgclInstance.about_node
@@ -230,7 +231,7 @@ def unobsolete(kgclInstance):
     #1. remove 'obsolete' from label
     #2. remove 'OBSOLETE' from definition 
     #3. update comment to "Note that this term was reinstated from obsolete"
-    #   TODO: no we remove the previous comment? 
+    #   TODO: no we remove the previous comment?  (all comments?)
     #4. Remove any replaced_by and consider tags 
     #5. Remove the owl:deprecated: true tag
 
@@ -279,10 +280,9 @@ def unobsolete(kgclInstance):
 
 
 def rename(kgclInstance):
-    #TODO: do we require the user to specify both the label and an ID?
-    #"rename {about} from {old value} to {new value}"?
     oldValue = kgclInstance.old_value
     newValue = kgclInstance.new_value
+    oldValue = oldValue.replace("'","")
 
     #initialise subject
     if(kgclInstance.about_node is None):
@@ -290,17 +290,19 @@ def rename(kgclInstance):
     else:
         subject = kgclInstance.about_node
 
-    #this chances only the label of an entity
+    #this changes only the label of an entity
     prefix = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-    #deleteQuery = "?entity rdfs:label " + oldValue + " ."
-    deleteQuery = subject + " rdfs:label " + oldValue + " ."
+    deleteQuery = subject + " rdfs:label ?label ."
     delete = "DELETE {" + deleteQuery + "}"
 
-    #insertQuery = "?entity rdfs:label " + newValue + " ."
     insertQuery = subject + " rdfs:label " + newValue + " ."
     insert = "INSERT {" + insertQuery + "}"
 
-    where = "WHERE {" + deleteQuery + "}"
+    whereQuery = subject + " rdfs:label ?label .  "
+    whereQuery += " BIND( LANG(?label) AS ?language)  "
+    whereQuery += " FILTER(STR(?label)=\"" + oldValue + "\") "
+
+    where = "WHERE {" + whereQuery + "}"
 
     updateQuery =  prefix + " " + \
                    delete + " " + \
@@ -334,14 +336,16 @@ def delete_by_id(kgclInstance):
 
 def delete_by_label(kgclInstance):
     about = kgclInstance.about_node
+    about = about.replace("'","") #remove single quotes from label input
 
-    deleteQuery = "?s1 ?p1 " + about + " . "
+    deleteQuery = "?s1 ?p1 ?label . "
     deleteQuery += "?s1 ?p2 ?o1 . "
 
     delete = "DELETE {" + deleteQuery + "}"
 
-    whereQuery = "?s1 ?p1 " + about + " . "
+    whereQuery = "?s1 ?p1 ?label . "
     whereQuery += "?s1 ?p2 ?o1 . "
+    whereQuery += " FILTER(STR(?label)=\"" + about + "\") " #ignore language tags
 
     where = "WHERE {" + whereQuery + "}"
 
@@ -349,6 +353,21 @@ def delete_by_label(kgclInstance):
                    where
 
     return updateQuery
+
+def create_class(kgclInstance):
+    termId =  kgclInstance.node_id;
+
+    prefix = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  "
+    prefix += "PREFIX owl: <http://www.w3.org/2002/07/owl#>  "
+    insertQuery = termId + " rdf:type owl:Class  . " 
+    insert = "INSERT {" + insertQuery + "}"
+    where = "WHERE {}"
+
+    updateQuery =  prefix + " " + \
+                   insert + " " + \
+                   where
+
+    return updateQuery 
 
 def create_node(kgclInstance):
     termId =  kgclInstance.node_id;
@@ -419,7 +438,7 @@ def obsolete_by_id(kgclInstance):
 
     delete = "DELETE {" + deleteQuery + "}"
 
-    insertQuery = "?entity rdfs:label ?obsolete_label . " 
+    insertQuery = "?entity rdfs:label ?tag . " 
     insertQuery += about + " owl:deprecated \"true\"^^xsd:boolean . " 
     if(not kgclInstance.has_direct_replacement is None): 
         insertQuery += about + " obo:IAO_0100001 " + replacement +  "  .  " 
@@ -433,7 +452,9 @@ def obsolete_by_id(kgclInstance):
     whereQuery += "{ ?lhs owl:equivalentClass " + about + " . } " 
     whereQuery += " UNION "
     whereQuery += "{ ?entity rdfs:label ?label . "
-    whereQuery += "BIND(CONCAT(\"obsolete \", ?label) AS ?obsolete_label ) } " 
+    whereQuery += " BIND(CONCAT(\"obsolete \", ?label) AS ?obsolete_label )  " 
+    whereQuery += " BIND( LANG(?label) AS ?language)  "
+    whereQuery += " BIND( STRLANG(?obsolete_label,?language) AS ?tag) }  "
 
     where = "WHERE {" + whereQuery + "}"
 
@@ -445,9 +466,6 @@ def obsolete_by_id(kgclInstance):
     return updateQuery 
 
 
-
-#TODO: This doesn't handle language tags
-#since, I canont query for any language tag, 
 def obsolete_by_label(kgclInstance): 
     about = kgclInstance.about_node
 
@@ -455,7 +473,7 @@ def obsolete_by_label(kgclInstance):
     prefix += "PREFIX owl: <http://www.w3.org/2002/07/owl#>  "
     prefix += "PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#> " 
 
-    deleteQuery = "?entity rdfs:label " + about + " . "
+    deleteQuery = "?entity rdfs:label ?label . "
     deleteQuery += "?entity rdfs:subClassOf ?superclass . "
     deleteQuery += "?entity owl:equivalentClass ?rhs . "
     deleteQuery += "?lhs owl:equivalentClass ?entity . "
@@ -463,26 +481,44 @@ def obsolete_by_label(kgclInstance):
     delete = "DELETE {" + deleteQuery + "}"
 
     inner_label = about.replace("'","")
-    obsolete_label = "'obsolete " + inner_label + "'" 
+    obsolete_label = "obsolete " + inner_label
 
-    insertQuery = "?entity rdfs:label " + obsolete_label + " . "
+    insertQuery = "?entity rdfs:label ?tag . "
     insertQuery += "?entity owl:deprecated \"true\"^^xsd:boolean . " 
 
     insert = "INSERT {" + insertQuery + "}"
 
     #TODO: handle the special case where only a label is present
     #(in that case we need to query for a single triple)
-    whereQuery = "{ ?entity rdfs:label " + about + " .  "
-    whereQuery += " ?entity rdfs:subClassOf ?superclass . } "
+    whereQuery = "{ ?entity rdfs:label ?label .  "
+    whereQuery += " ?entity rdfs:subClassOf ?superclass .  "
+    whereQuery += " BIND( LANG(?label) AS ?language)  "
+    whereQuery += " BIND( STRLANG(\"" + obsolete_label + "\",?language) AS ?tag)  "
+    whereQuery += " FILTER(STR(?label)=\"" + inner_label + "\") } "
+
     whereQuery += " UNION "
-    whereQuery += "{ ?entity rdfs:label " + about + " .  "
-    whereQuery += " ?entity owl:equivalentClass ?rhs . } "
+
+    whereQuery += "{ ?entity rdfs:label ?label .  "
+    whereQuery += " ?entity owl:equivalentClass ?rhs . " 
+    whereQuery += " BIND( LANG(?label) AS ?language) "
+    whereQuery += " BIND( STRLANG(\"" + obsolete_label + "\",?language) AS ?tag)  "
+    whereQuery += " FILTER(STR(?label)=\"" + inner_label + "\") } " 
+
     whereQuery += " UNION "
-    whereQuery += "{ ?entity rdfs:label " + about + " .  "
-    whereQuery += " ?lhs owl:equivalentClass ?entity . } " 
+
+    whereQuery += "{ ?entity rdfs:label ?label .  "
+    whereQuery += " ?lhs owl:equivalentClass ?entity . " 
+    whereQuery += " BIND( LANG(?label) AS ?language) "
+    whereQuery += " BIND( STRLANG(\"" + obsolete_label + "\",?language) AS ?tag)  "
+    whereQuery += " FILTER(STR(?label)=\"" + inner_label + "\") } " 
+
     whereQuery += " UNION "
-    whereQuery += "{ ?entity rdfs:label " + about + " .  "
-    whereQuery += " ?entity rdf:type ?type . } " 
+
+    whereQuery += "{ ?entity rdfs:label ?label .  "
+    whereQuery += " ?entity rdf:type ?type .  " 
+    whereQuery += " BIND( LANG(?label) AS ?language) "
+    whereQuery += " BIND( STRLANG(\"" + obsolete_label + "\",?language) AS ?tag)  "
+    whereQuery += " FILTER(STR(?label)=\"" + inner_label + "\") } " 
 
     where = "WHERE {" + whereQuery + "}"
 
